@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="el">
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Ραντεβού</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+      <style>
+        body {
+            font-family: "Roboto", sans-serif;
+        }
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+        }
+        .modal-content {
+            transform: scale(0.7);
+            transition: transform 0.3s ease;
+        }
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+        .appointment-card {
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid black;
+        }
+        .current-appointment {
+            border: 3px solid #22c55e;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+        .past-appointment {
+            opacity: 0.6;
+            background: #f3f4f6;
+        }
+      </style>
+   </head>
+   <body>
+      <div class="header w-full h-[70px] flex justify-between items-center px-4 sm:px-6 fixed top-0 left-0 z-50">
+         <div class="cursor-pointer transition-transform" id="openModal" title="Προσθήκη Ραντεβού">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-8 sm:size-9 text-gray-700">
+               <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+            </svg>
+         </div>
+         <div class="text-xl sm:text-2xl font-bold text-gray-800">Κουρείο</div>
+         <div class="cursor-pointer transition-transform" id="deleteAll" title="Διαγραφή Όλων">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-8 sm:size-9 text-red-600">
+               <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+            </svg>
+         </div>
+      </div>
+
+      <div class="w-full min-h-screen flex flex-col items-center px-4 pt-[90px] pb-8 gap-4" id="appointmentsContainer">
+      </div>
+
+      <div class="modal" id="appointmentModal">
+        <div class="modal-content bg-white rounded-2xl p-4 sm:p-8 w-full max-w-[500px] mx-4 shadow-2xl">
+          <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800 text-center">Νέο Ραντεβού</h2>
+          
+          <div class="mb-3 sm:mb-4">
+            <label class="block font-semibold mb-2 text-sm sm:text-base text-gray-700">Όνομα Πελάτη</label>
+            <input type="text" id="clientName" class="w-full border-2 border-gray-300 rounded-xl px-3 sm:px-4 py-3 text-sm sm:text-base focus:border-black focus:outline-none transition-colors" placeholder="Εισάγετε όνομα πελάτη">
+          </div>
+
+          <div class="mb-4 sm:mb-6">
+            <label class="block font-semibold mb-2 text-sm sm:text-base text-gray-700">Ώρα</label>
+            <input type="time" id="appointmentTime" class="w-full border-2 border-gray-300 rounded-xl px-3 sm:px-4 py-3 text-sm sm:text-base focus:border-black focus:outline-none transition-colors">
+          </div>
+
+          <div class="flex gap-2 sm:gap-3">
+            <button id="saveAppointment" class="flex-1 bg-black text-white font-bold py-3 px-3 sm:px-4 rounded-xl cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all text-sm sm:text-base shadow-lg">
+              Αποθήκευση
+            </button>
+            <button id="cancelModal" class="flex-1 border-2 border-gray-300 font-bold py-3 px-3 sm:px-4 rounded-xl cursor-pointer hover:bg-gray-100 transition-all text-sm sm:text-base">
+              Άκυρο
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="deleteModal">
+        <div class="modal-content bg-white rounded-2xl p-6 sm:p-8 w-full max-w-[400px] mx-4 shadow-2xl">
+          <div class="text-center mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" class="size-16 mx-auto text-red-500 mb-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Διαγραφή Όλων των Ραντεβού;</h2>
+            <p class="text-gray-600 text-sm sm:text-base">Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.</p>
+          </div>
+
+          <div class="flex gap-3">
+            <button id="confirmDelete" class="flex-1 bg-black text-white font-bold py-3 px-4 rounded-xl cursor-pointer hover:from-red-600 hover:to-red-700 transition-all shadow-lg">
+              Διαγραφή Όλων
+            </button>
+            <button id="cancelDelete" class="flex-1 border-2 border-gray-300 font-bold py-3 px-4 rounded-xl cursor-pointer hover:bg-gray-100 transition-all">
+              Άκυρο
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+
+      <script>
+        let appointments = [];
+        const STORAGE_KEY = 'barberAppointments';
+
+        function loadAppointments() {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            try {
+              appointments = JSON.parse(stored);
+            } catch (e) {
+              appointments = [];
+              console.error("Error parsing appointments from Local Storage:", e);
+            }
+          }
+        }
+
+        function saveAppointments() {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appointments));
+        }
+
+        const appointmentModal = document.getElementById('appointmentModal');
+        const deleteModal = document.getElementById('deleteModal');
+        const openModalBtn = document.getElementById('openModal');
+        const cancelModalBtn = document.getElementById('cancelModal');
+        const saveAppointmentBtn = document.getElementById('saveAppointment');
+        const deleteAllBtn = document.getElementById('deleteAll');
+        const confirmDeleteBtn = document.getElementById('confirmDelete');
+        const cancelDeleteBtn = document.getElementById('cancelDelete');
+        const appointmentsContainer = document.getElementById('appointmentsContainer');
+        const clientNameInput = document.getElementById('clientName');
+        const appointmentTimeInput = document.getElementById('appointmentTime');
+
+        function getTimeStatus(appointmentTime) {
+          const now = new Date();
+          const [hours, minutes] = appointmentTime.split(':');
+          const appointmentDate = new Date();
+          appointmentDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          
+          const diff = appointmentDate - now;
+          const diffMinutes = diff / (1000 * 60);
+          
+          if (diffMinutes >= -30 && diffMinutes <= 30) {
+            return 'current';
+          }
+          if (diffMinutes < -30) {
+            return 'past';
+          }
+          return 'future';
+        }
+
+        openModalBtn.addEventListener('click', () => {
+          appointmentModal.classList.add('active');
+          clientNameInput.value = '';
+          appointmentTimeInput.value = '';
+          setTimeout(() => clientNameInput.focus(), 300);
+        });
+
+        cancelModalBtn.addEventListener('click', () => {
+          appointmentModal.classList.remove('active');
+        });
+
+
+
+
+
+        saveAppointmentBtn.addEventListener('click', () => {
+          const name = clientNameInput.value.trim();
+          const time = appointmentTimeInput.value;
+
+          if (name && time) {
+            const appointment = {
+              id: Date.now(),
+              name: name,
+              time: time
+            };
+            
+            appointments.push(appointment);
+            appointments.sort((a, b) => a.time.localeCompare(b.time));
+            saveAppointments();
+            renderAppointments();
+            appointmentModal.classList.remove('active');
+          } else {
+            if (!name) clientNameInput.classList.add('border-red-500');
+            if (!time) appointmentTimeInput.classList.add('border-red-500');
+            setTimeout(() => {
+              clientNameInput.classList.remove('border-red-500');
+              appointmentTimeInput.classList.remove('border-red-500');
+            }, 2000);
+          }
+        });
+
+        deleteAllBtn.addEventListener('click', () => {
+          if (appointments.length > 0) {
+            deleteModal.classList.add('active');
+          }
+        });
+
+        confirmDeleteBtn.addEventListener('click', () => {
+          appointments = [];
+          saveAppointments();
+          renderAppointments();
+          deleteModal.classList.remove('active');
+        });
+
+        cancelDeleteBtn.addEventListener('click', () => {
+          deleteModal.classList.remove('active');
+        });
+
+        function renderAppointments() {
+          appointmentsContainer.innerHTML = '';
+          
+          if (appointments.length === 0) {
+            appointmentsContainer.innerHTML = `
+              <div class="flex flex-col items-center justify-center h-[calc(100vh-150px)]">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-20 text-gray-300 mb-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                </svg>
+                <div class="text-gray-400 text-base sm:text-lg font-medium">Δεν υπάρχουν προγραμματισμένα ραντεβού</div>
+                <div class="text-gray-400 text-sm mt-2">Πατήστε το εικονίδιο ημερολογίου για να προσθέσετε</div>
+                <div class="text-gray-400 text-sm mt-2">© 2025 George Lorentzos</div>
+              </div>
+            `;
+            return;
+          }
+
+          appointments.forEach((appointment, index) => {
+            const status = getTimeStatus(appointment.time);
+            const card = document.createElement('div');
+            
+            let statusClass = '';
+            let statusBadge = '';
+            let timeBadgeClass = 'bg-black text-white';
+            
+            if (status === 'current') {
+              statusClass = 'current-appointment';
+             
+              timeBadgeClass = 'bg-black text-white';
+            } else if (status === 'past') {
+              statusClass = 'past-appointment';
+              timeBadgeClass = 'bg-gray-200 text-gray-600';
+            }
+            
+            card.className = `appointment-card flex justify-between items-center w-full max-w-[500px] min-h-[70px] bg-white border-2 border-gray-200 rounded-2xl px-4 sm:px-6 py-3 shadow-md transition-shadow ${statusClass}`;
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.innerHTML = `
+              <div class="flex items-center overflow-hidden gap-3">
+                <div class="w-12 h-12 rounded-full bg-black flex items-center justify-center flex-shrink-0 shadow-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" stroke-width="1.5" stroke="white" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-bold truncate text-sm sm:text-base text-gray-800">${appointment.name}</div>
+                  ${statusBadge}
+                </div>
+              </div>
+              <div class="text-sm sm:text-base font-semibold flex-shrink-0 ${timeBadgeClass} px-3 py-1 rounded-lg">${appointment.time}</div>
+            `;
+            appointmentsContainer.appendChild(card);
+          });
+        }
+
+        setInterval(() => {
+          renderAppointments();
+        }, 60000);
+        
+        loadAppointments();
+        renderAppointments();
+      </script>
+   </body>
+</html>
